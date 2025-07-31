@@ -27,4 +27,3 @@ DB setup
 
 added .env for a sample visual
 
-Can be implemented with chatbot! Using deepseek Free model and key!
