@@ -11,7 +11,7 @@ Implememted JWT auth role based and also refreshtokens are used after a set of t
 
 Clean UI 
 
-Deepseek LLM API
+Deepseek V3-0324(free model) API is been used
 
 Made a Protected route for each User using json Web token
 
