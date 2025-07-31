@@ -17,7 +17,7 @@ Implememted JWT auth role based and also refreshtokens are used after a set of t
 
 Clean UI 
 
-Deepseek V3-0324(free model) API is been used
+Deepseek V3-0324(free model) API is been used Via Openrouter Acess
 
 Made a Protected route for each User using json Web token
 
