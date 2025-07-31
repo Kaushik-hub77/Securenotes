@@ -1,5 +1,9 @@
 
-A simple and Well Made App With Features that are asked!
+An AI powered Notes app that takes title and body as input and summarises the text that can be copied 
+
+User can copy the summarised code and paste it in their own note
+This summariser allows to make a personalised note section after filling title and body!
+<img width="269" height="335" alt="summarise" src="https://github.com/user-attachments/assets/c14c31c6-548a-43db-b8eb-a348bb143ed9" />
 
 Implemented neon postgresql db connection for storing securenotes/public notes and also username and password 
 
