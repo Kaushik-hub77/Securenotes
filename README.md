@@ -1,6 +1,9 @@
 
+A simple and Well Made App With Features that are asked!
+
 Implemented neon postgresql db connection for storing securenotes/public notes and also username and password 
 
+Users can specify encrypted notes only to them as well as public notes that is displated under a specific route
 
 The securenotes are encrypted in db 
 
@@ -17,3 +20,5 @@ Made a Protected route for each User using json Web token
 DB setup 
 
 added .env for a sample visual
+
+Can be implemented with chatbot! Using deepseek Free model and key!
