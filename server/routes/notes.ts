@@ -36,7 +36,8 @@ export const authenticateToken: RequestHandler = (req, res, next) => {
 // Encryption/Decryption utilities
 const encrypt = (text: string): string => {
   const iv = crypto.randomBytes(16);
-  const cipher = crypto.createCipher("aes-256-cbc", ENCRYPTION_KEY);
+  const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
+  const cipher = crypto.createCipheriv("aes-256-cbc", key, iv);
   let encrypted = cipher.update(text, "utf8", "hex");
   encrypted += cipher.final("hex");
   return iv.toString("hex") + ":" + encrypted;
@@ -47,7 +48,8 @@ const decrypt = (encryptedText: string): string => {
     const textParts = encryptedText.split(":");
     const iv = Buffer.from(textParts.shift()!, "hex");
     const encrypted = textParts.join(":");
-    const decipher = crypto.createDecipher("aes-256-cbc", ENCRYPTION_KEY);
+    const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
+    const decipher = crypto.createDecipheriv("aes-256-cbc", key, iv);
     let decrypted = decipher.update(encrypted, "hex", "utf8");
     decrypted += decipher.final("utf8");
     return decrypted;
@@ -65,11 +67,21 @@ export const handleGetNotes: RequestHandler = async (req, res) => {
       .where(eq(notes.userId, userId))
       .orderBy(desc(notes.updatedAt));
 
-    // Decrypt encrypted notes
-    const decryptedNotes = userNotes.map(note => ({
-      ...note,
-      content: note.isEncrypted ? decrypt(note.content) : note.content
-    }));
+    // Decrypt encrypted notes with error handling
+    const decryptedNotes = userNotes.map(note => {
+      try {
+        return {
+          ...note,
+          content: note.isEncrypted ? decrypt(note.content) : note.content
+        };
+      } catch (error) {
+        console.error('Error decrypting note:', note.id, error);
+        return {
+          ...note,
+          content: note.isEncrypted ? "[Decryption Error - Content may be corrupted]" : note.content
+        };
+      }
+    });
 
     res.json({
       success: true,

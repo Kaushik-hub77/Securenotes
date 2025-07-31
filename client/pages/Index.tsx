@@ -49,6 +49,70 @@ export default function Index() {
   const [noteContent, setNoteContent] = useState("");
   const [isPublic, setIsPublic] = useState(false);
   const [isEncrypted, setIsEncrypted] = useState(false);
+  
+  // DeepSeek AI summarization states
+  const [noteSummary, setNoteSummary] = useState("");
+  const [isSummarizing, setIsSummarizing] = useState(false);
+
+  // DeepSeek AI summarization
+  const handleSummarize = async () => {
+    const content = editingNote ? editingNote.content : noteContent;
+    if (!content.trim()) {
+      alert("Please enter some content to summarize");
+      return;
+    }
+
+    try {
+      setIsSummarizing(true);
+      setNoteSummary("");
+      
+      const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+      if (!apiKey) {
+        alert("OpenRouter API key not configured. Please add VITE_OPENROUTER_API_KEY to your .env file.");
+        setIsSummarizing(false);
+        return;
+      }
+
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "HTTP-Referer": window.location.origin,
+          "X-Title": "SecureNotes App",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "deepseek/deepseek-chat-v3-0324:free",
+          messages: [
+            {
+              role: "system",
+              content: "You are a helpful assistant that summarizes text concisely."
+            },
+            {
+              role: "user",
+              content: `Please summarize the following text in 2-3 sentences:\n\n${content}`
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 500
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || `API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const summary = data.choices[0]?.message?.content?.trim() || "Unable to generate summary";
+      setNoteSummary(summary);
+    } catch (error) {
+      console.error("Summarization error:", error);
+      alert(`Failed to summarize content: ${error.message}`);
+    } finally {
+      setIsSummarizing(false);
+    }
+  };
 
   // Theme management
   useEffect(() => {
@@ -107,12 +171,23 @@ export default function Index() {
           'Authorization': `Bearer ${token}`
         }
       });
+      
+      if (!response.ok) {
+        console.error('Failed to fetch notes:', response.status);
+        setNotes([]);
+        return;
+      }
+      
       const data = await response.json();
       if (data.success) {
-        setNotes(data.data.notes);
+        setNotes(data.data.notes || []);
+      } else {
+        console.error('Error in notes response:', data.error);
+        setNotes([]);
       }
     } catch (error) {
       console.error('Error fetching notes:', error);
+      setNotes([]);
     }
   };
 
@@ -226,7 +301,7 @@ export default function Index() {
           'Authorization': `Bearer ${token}`
         }
       });
-
+      
       const data = await response.json();
       if (data.success) {
         setNotes(notes.filter(note => note.id !== noteId));
@@ -548,6 +623,41 @@ export default function Index() {
                         className="border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white transition-colors resize-none"
                       />
                     </div>
+
+                    <div className="space-y-4">
+                      <Button
+                        onClick={handleSummarize}
+                        disabled={isSummarizing}
+                        className="w-full h-12 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-medium rounded-xl transition-all duration-200"
+                      >
+                        {isSummarizing ? (
+                          <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                            Summarizing...
+                          </>
+                        ) : (
+                          <>
+                            <SparklesIcon className="h-5 w-5 mr-2" />
+                            Summarize with DeepSeek
+                          </>
+                        )}
+                      </Button>
+
+                      {noteSummary && (
+                        <div className="space-y-2">
+                          <Label htmlFor="summary" className="text-sm font-medium text-gray-700 dark:text-gray-200">AI Summary</Label>
+                          <Textarea
+                            id="summary"
+                            value={noteSummary}
+                            onChange={(e) => setNoteSummary(e.target.value)}
+                            rows={4}
+                            className="border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white transition-colors resize-none"
+                            placeholder="AI-generated summary will appear here..."
+                          />
+                        </div>
+                      )}
+                    </div>
+
                     <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
                       <div className="flex items-center space-x-3">
                         <Switch
