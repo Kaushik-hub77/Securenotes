@@ -82,11 +82,10 @@ export default function PublicNote() {
             <h1 className="text-2xl font-bold text-gray-900">SecureNotes</h1>
           </Link>
           <div className="text-sm text-gray-600 bg-blue-50 px-3 py-1 rounded-full">
-            📖 Public Note
+             Public Note
           </div>
         </div>
       </div>
-
       {/* Note Content */}
       <div className="max-w-4xl mx-auto px-4 py-8">
         <Card className="shadow-lg">

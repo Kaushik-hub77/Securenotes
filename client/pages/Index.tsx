@@ -19,7 +19,12 @@ import {
   LogOutIcon,
   UserIcon,
   EyeIcon,
-  ExternalLinkIcon
+  ExternalLinkIcon,
+  SparklesIcon,
+  ShieldIcon,
+  ZapIcon,
+  SunIcon,
+  MoonIcon
 } from "lucide-react";
 import { Note, CreateNoteRequest, User } from "@shared/api";
 
@@ -32,6 +37,7 @@ export default function Index() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   
   // Auth form states
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
@@ -43,6 +49,30 @@ export default function Index() {
   const [noteContent, setNoteContent] = useState("");
   const [isPublic, setIsPublic] = useState(false);
   const [isEncrypted, setIsEncrypted] = useState(false);
+
+  // Theme management
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      setIsDarkMode(true);
+      document.documentElement.classList.add('dark');
+    } else {
+      setIsDarkMode(false);
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = !isDarkMode;
+    setIsDarkMode(newTheme);
+    if (newTheme) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  };
 
   // Fetch public notes
   const fetchPublicNotes = async () => {
@@ -226,17 +256,25 @@ export default function Index() {
       const data = await response.json();
 
       if (data.success) {
-        // Store token and user data
-        localStorage.setItem('auth_token', data.data.token);
-        localStorage.setItem('user_data', JSON.stringify(data.data.user));
+        if (authMode === "login") {
+          // For login: Store token and user data, then log in
+          localStorage.setItem('auth_token', data.data.token);
+          localStorage.setItem('user_data', JSON.stringify(data.data.user));
 
-        setUser(data.data.user);
-        setIsAuthDialogOpen(false);
-        setEmail("");
-        setPassword("");
+          setUser(data.data.user);
+          setIsAuthDialogOpen(false);
+          setEmail("");
+          setPassword("");
 
-        // Fetch user's notes
-        fetchNotes(data.data.token);
+          // Fetch user's notes
+          fetchNotes(data.data.token);
+        } else {
+          // For register: Just show success message and switch to login tab
+          alert("Account created successfully! You can now sign in with your email and password.");
+          setAuthMode("login");
+          setEmail("");
+          setPassword("");
+        }
       } else {
         alert(data.error || "Authentication failed");
       }
@@ -255,76 +293,126 @@ export default function Index() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4 relative overflow-hidden">
+        {/* Animated background elements - reduced glow in dark mode */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-400/20 dark:from-blue-400/10 dark:to-purple-400/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-400/20 to-pink-400/20 dark:from-purple-400/10 dark:to-pink-400/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-indigo-400/10 to-blue-400/10 dark:from-indigo-400/5 dark:to-blue-400/5 rounded-full blur-3xl animate-pulse delay-500"></div>
+        </div>
+
+        <div className="w-full max-w-md relative z-10">
           <div className="text-center mb-8">
-            <div className="flex items-center justify-center mb-4">
-              <StickyNoteIcon className="h-12 w-12 text-blue-600" />
+            <div className="flex items-center justify-center mb-6">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-500 dark:to-purple-500 rounded-2xl blur-lg opacity-75 dark:opacity-50 animate-pulse"></div>
+                <div className="relative bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-500 dark:to-purple-500 p-4 rounded-2xl">
+                  <StickyNoteIcon className="h-12 w-12 text-white" />
+                </div>
+              </div>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">SecureNotes</h1>
-            <p className="text-gray-600">Your secure, encrypted note-taking companion</p>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-200 bg-clip-text text-transparent mb-3">
+              SecureNotes
+            </h1>
+            <p className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed">
+              Your secure, encrypted note-taking companion with enterprise-grade protection
+            </p>
+            <div className="flex items-center justify-center space-x-4 mt-4 text-sm text-gray-500 dark:text-gray-400">
+              <div className="flex items-center space-x-1">
+                <ShieldIcon className="h-4 w-4 text-green-500" />
+                <span>End-to-end encryption</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <ZapIcon className="h-4 w-4 text-blue-500" />
+                <span>Lightning fast</span>
+              </div>
+            </div>
           </div>
           
-          <Card>
-            <CardHeader>
-              <CardTitle>Welcome Back</CardTitle>
-              <CardDescription>Sign in to access your secure notes</CardDescription>
+          <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 border-0 shadow-2xl dark:shadow-gray-900/50">
+            <CardHeader className="text-center pb-6">
+              <CardTitle className="text-2xl font-semibold text-gray-900 dark:text-white">Welcome Back</CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-300">
+                Sign in to access your secure notes
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Tabs value={authMode} onValueChange={(value) => setAuthMode(value as "login" | "register")}>
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="login">Sign In</TabsTrigger>
-                  <TabsTrigger value="register">Sign Up</TabsTrigger>
+            <CardContent className="space-y-6">
+              <Tabs value={authMode} onValueChange={(value) => setAuthMode(value as "login" | "register")} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 bg-gray-100 dark:bg-gray-700 p-1 rounded-xl">
+                  <TabsTrigger 
+                    value="login" 
+                    className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 data-[state=active]:shadow-sm data-[state=active]:text-gray-900 dark:data-[state=active]:text-white rounded-lg transition-all duration-200"
+                  >
+                    Sign In
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="register" 
+                    className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 data-[state=active]:shadow-sm data-[state=active]:text-gray-900 dark:data-[state=active]:text-white rounded-lg transition-all duration-200"
+                  >
+                    Sign Up
+                  </TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="login" className="space-y-4 mt-4">
+                <TabsContent value="login" className="space-y-4 mt-6">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-200">Email</Label>
                     <Input
                       id="email"
                       type="email"
                       placeholder="your@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      className="h-12 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white transition-colors"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
+                    <Label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-gray-200">Password</Label>
                     <Input
                       id="password"
                       type="password"
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      className="h-12 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white transition-colors"
                     />
                   </div>
-                  <Button onClick={handleAuth} className="w-full">
+                  <Button 
+                    onClick={handleAuth} 
+                    className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg"
+                  >
+                    <SparklesIcon className="h-4 w-4 mr-2" />
                     Sign In
                   </Button>
                 </TabsContent>
                 
-                <TabsContent value="register" className="space-y-4 mt-4">
+                <TabsContent value="register" className="space-y-4 mt-6">
                   <div className="space-y-2">
-                    <Label htmlFor="email-register">Email</Label>
+                    <Label htmlFor="email-register" className="text-sm font-medium text-gray-700 dark:text-gray-200">Email</Label>
                     <Input
                       id="email-register"
                       type="email"
                       placeholder="your@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      className="h-12 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white transition-colors"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password-register">Password</Label>
+                    <Label htmlFor="password-register" className="text-sm font-medium text-gray-700 dark:text-gray-200">Password</Label>
                     <Input
                       id="password-register"
                       type="password"
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      className="h-12 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white transition-colors"
                     />
                   </div>
-                  <Button onClick={handleAuth} className="w-full">
+                  <Button 
+                    onClick={handleAuth} 
+                    className="w-full h-12 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg"
+                  >
+                    <SparklesIcon className="h-4 w-4 mr-2" />
                     Create Account
                   </Button>
                 </TabsContent>
@@ -336,22 +424,57 @@ export default function Index() {
     );
   }
 
+  
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <StickyNoteIcon className="h-8 w-8 text-blue-600" />
-            <h1 className="text-2xl font-bold text-gray-900">SecureNotes</h1>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Enhanced Header */}
+      <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 sticky top-0 z-10 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-500 dark:to-purple-500 rounded-xl blur-sm opacity-75 dark:opacity-50"></div>
+              <div className="relative bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-500 dark:to-purple-500 p-2 rounded-xl">
+                <StickyNoteIcon className="h-8 w-8 text-white" />
+              </div>
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-200 bg-clip-text text-transparent">
+                SecureNotes
+              </h1>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Enterprise-grade security</p>
+            </div>
           </div>
           
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <UserIcon className="h-4 w-4" />
-              <span>{user.email}</span>
+            <div className="flex items-center space-x-3 bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm px-4 py-2 rounded-xl border border-gray-200/50 dark:border-gray-600/50">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
+                <UserIcon className="h-4 w-4" />
+                <span className="font-medium">{user.email}</span>
+              </div>
             </div>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
+            
+            {/* Theme Toggle */}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={toggleTheme}
+              className="border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              {isDarkMode ? (
+                <SunIcon className="h-4 w-4" />
+              ) : (
+                <MoonIcon className="h-4 w-4" />
+              )}
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleLogout}
+              className="border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
               <LogOutIcon className="h-4 w-4 mr-2" />
               Logout
             </Button>
@@ -359,196 +482,269 @@ export default function Index() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Tabs Navigation */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Enhanced Tabs Navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="my-notes">My Notes ({filteredNotes.length})</TabsTrigger>
-            <TabsTrigger value="public-notes">Public Notes ({filteredPublicNotes.length})</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 bg-gray-100 dark:bg-gray-700 p-1 rounded-xl h-14">
+            <TabsTrigger 
+              value="my-notes" 
+              className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 data-[state=active]:shadow-sm data-[state=active]:text-gray-900 dark:data-[state=active]:text-white rounded-lg transition-all duration-200 font-medium"
+            >
+              My Notes ({filteredNotes.length})
+            </TabsTrigger>
+            <TabsTrigger 
+              value="public-notes" 
+              className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 data-[state=active]:shadow-sm data-[state=active]:text-gray-900 dark:data-[state=active]:text-white rounded-lg transition-all duration-200 font-medium"
+            >
+              Public Notes ({filteredPublicNotes.length})
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="my-notes">
-            {/* Search and Create */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-8">
-          <div className="relative flex-1">
-            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search your notes..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <PlusIcon className="h-4 w-4 mr-2" />
-                New Note
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Create New Note</DialogTitle>
-                <DialogDescription>
-                  Create a new note with optional encryption and public sharing
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Title</Label>
-                  <Input
-                    id="title"
-                    placeholder="Note title..."
-                    value={noteTitle}
-                    onChange={(e) => setNoteTitle(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="content">Content</Label>
-                  <Textarea
-                    id="content"
-                    placeholder="Write your note content here..."
-                    value={noteContent}
-                    onChange={(e) => setNoteContent(e.target.value)}
-                    rows={6}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="public"
-                      checked={isPublic}
-                      onCheckedChange={setIsPublic}
-                    />
-                    <Label htmlFor="public">Public sharing</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="encrypted"
-                      checked={isEncrypted}
-                      onCheckedChange={setIsEncrypted}
-                    />
-                    <Label htmlFor="encrypted">Encrypt content</Label>
-                  </div>
-                </div>
-                <Button onClick={handleCreateNote} className="w-full">
-                  Create Note
-                </Button>
+          <TabsContent value="my-notes" className="space-y-6">
+            {/* Enhanced Search and Create */}
+            <div className="flex flex-col lg:flex-row gap-4 mb-8">
+              <div className="relative flex-1">
+                <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Input
+                  placeholder="Search your notes..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-12 h-12 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white transition-colors rounded-xl"
+                />
               </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="h-12 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg">
+                    <PlusIcon className="h-5 w-5 mr-2" />
+                    New Note
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl dark:bg-gray-800 dark:border-gray-700">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl font-semibold dark:text-white">Create New Note</DialogTitle>
+                    <DialogDescription className="text-gray-600 dark:text-gray-300">
+                      Create a new note with optional encryption and public sharing
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-6 mt-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="title" className="text-sm font-medium text-gray-700 dark:text-gray-200">Title</Label>
+                      <Input
+                        id="title"
+                        placeholder="Note title..."
+                        value={noteTitle}
+                        onChange={(e) => setNoteTitle(e.target.value)}
+                        className="h-12 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white transition-colors"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="content" className="text-sm font-medium text-gray-700 dark:text-gray-200">Content</Label>
+                      <Textarea
+                        id="content"
+                        placeholder="Write your note content here..."
+                        value={noteContent}
+                        onChange={(e) => setNoteContent(e.target.value)}
+                        rows={8}
+                        className="border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white transition-colors resize-none"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+                      <div className="flex items-center space-x-3">
+                        <Switch
+                          id="public"
+                          checked={isPublic}
+                          onCheckedChange={setIsPublic}
+                        />
+                        <div>
+                          <Label htmlFor="public" className="text-sm font-medium text-gray-700 dark:text-gray-200">Public sharing</Label>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Make this note visible to everyone</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <Switch
+                          id="encrypted"
+                          checked={isEncrypted}
+                          onCheckedChange={setIsEncrypted}
+                        />
+                        <div>
+                          <Label htmlFor="encrypted" className="text-sm font-medium text-gray-700 dark:text-gray-200">Encrypt content</Label>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Add extra security layer</p>
+                        </div>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={handleCreateNote} 
+                      className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-xl transition-all duration-200"
+                    >
+                      <SparklesIcon className="h-5 w-5 mr-2" />
+                      Create Note
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
 
-            {/* My Notes Grid */}
+            {/* Enhanced My Notes Grid */}
             {filteredNotes.length === 0 ? (
-              <div className="text-center py-12">
-                <StickyNoteIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No notes found</h3>
-                <p className="text-gray-600 mb-4">
-                  {searchTerm ? "Try adjusting your search terms" : "Create your first note to get started"}
+              <div className="text-center py-16">
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 dark:from-blue-400/10 dark:to-purple-400/10 rounded-full blur-2xl"></div>
+                  <StickyNoteIcon className="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto relative z-10" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">No notes found</h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-6 max-w-md mx-auto">
+                  {searchTerm ? "Try adjusting your search terms" : "Create your first note to get started with secure note-taking"}
                 </p>
                 {!searchTerm && (
-                  <Button onClick={() => setIsCreateDialogOpen(true)}>
-                    <PlusIcon className="h-4 w-4 mr-2" />
+                  <Button 
+                    onClick={() => setIsCreateDialogOpen(true)}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg"
+                  >
+                    <PlusIcon className="h-5 w-5 mr-2" />
                     Create your first note
                   </Button>
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredNotes.map((note) => (
-              <Card key={note.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="text-lg leading-tight">{note.title}</CardTitle>
-                    <div className="flex space-x-1">
-                      {note.isEncrypted && <LockIcon className="h-4 w-4 text-amber-600" />}
-                      {note.isPublic && <GlobeIcon className="h-4 w-4 text-green-600" />}
-                    </div>
-                  </div>
-                  <CardDescription>
-                    {new Date(note.updatedAt).toLocaleDateString()}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-700 line-clamp-4 whitespace-pre-wrap">
-                    {note.content}
-                  </p>
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {note.isPublic && <Badge variant="secondary">Public</Badge>}
-                    {note.isEncrypted && <Badge variant="outline">Encrypted</Badge>}
-                  </div>
-                </CardContent>
-                <CardFooter className="flex justify-end space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEditNote(note)}
-                  >
-                    <EditIcon className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDeleteNote(note.id)}
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
+                  <Card key={note.id} className="group hover:shadow-xl dark:hover:shadow-gray-900/50 transition-all duration-300 transform hover:-translate-y-1 border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-start justify-between">
+                        <CardTitle className="text-lg leading-tight font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                          {note.title}
+                        </CardTitle>
+                        <div className="flex space-x-1">
+                          {note.isEncrypted && (
+                            <div className="p-1 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                              <LockIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                            </div>
+                          )}
+                          {note.isPublic && (
+                            <div className="p-1 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                              <GlobeIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <CardDescription className="text-sm text-gray-500 dark:text-gray-400">
+                        {new Date(note.updatedAt).toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'short', 
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pb-4">
+                      <p className="text-gray-700 dark:text-gray-300 line-clamp-4 whitespace-pre-wrap leading-relaxed">
+                        {note.content}
+                      </p>
+                      <div className="flex flex-wrap gap-2 mt-4">
+                        {note.isPublic && (
+                          <Badge variant="secondary" className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">
+                            <GlobeIcon className="h-3 w-3 mr-1" />
+                            Public
+                          </Badge>
+                        )}
+                        {note.isEncrypted && (
+                          <Badge variant="outline" className="border-amber-200 dark:border-amber-700 text-amber-700 dark:text-amber-400">
+                            <LockIcon className="h-3 w-3 mr-1" />
+                            Encrypted
+                          </Badge>
+                        )}
+                      </div>
+                    </CardContent>
+                    <CardFooter className="flex justify-end space-x-2 pt-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditNote(note)}
+                        className="border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-200 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                      >
+                        <EditIcon className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteNote(note.id)}
+                        className="border-gray-200 dark:border-gray-600 hover:bg-red-50 dark:hover:bg-red-900/30 hover:border-red-200 dark:hover:border-red-700 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))}
               </div>
             )}
           </TabsContent>
 
-          <TabsContent value="public-notes">
-            <div className="flex flex-col sm:flex-row gap-4 mb-8">
+          <TabsContent value="public-notes" className="space-y-6">
+            <div className="flex flex-col lg:flex-row gap-4 mb-8">
               <div className="relative flex-1">
-                <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <Input
                   placeholder="Search public notes..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-12 h-12 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white transition-colors rounded-xl"
                 />
               </div>
             </div>
 
-            {/* Public Notes Grid */}
+            {/* Enhanced Public Notes Grid */}
             {filteredPublicNotes.length === 0 ? (
-              <div className="text-center py-12">
-                <GlobeIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No public notes found</h3>
-                <p className="text-gray-600 mb-4">
+              <div className="text-center py-16">
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-blue-400/20 dark:from-green-400/10 dark:to-blue-400/10 rounded-full blur-2xl"></div>
+                  <GlobeIcon className="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto relative z-10" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">No public notes found</h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-6 max-w-md mx-auto">
                   {searchTerm ? "Try adjusting your search terms" : "No public notes are currently available"}
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredPublicNotes.map((note) => (
-                  <Card key={note.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader>
+                  <Card key={note.id} className="group hover:shadow-xl dark:hover:shadow-gray-900/50 transition-all duration-300 transform hover:-translate-y-1 border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+                    <CardHeader className="pb-4">
                       <div className="flex items-start justify-between">
-                        <CardTitle className="text-lg leading-tight">{note.title}</CardTitle>
-                        <GlobeIcon className="h-4 w-4 text-green-600" />
+                        <CardTitle className="text-lg leading-tight font-semibold text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
+                          {note.title}
+                        </CardTitle>
+                        <div className="p-1 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                          <GlobeIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        </div>
                       </div>
-                      <CardDescription>
-                        {new Date(note.updatedAt).toLocaleDateString()}
+                      <CardDescription className="text-sm text-gray-500 dark:text-gray-400">
+                        {new Date(note.updatedAt).toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'short', 
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
                       </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <p className="text-gray-700 line-clamp-4 whitespace-pre-wrap">
+                    <CardContent className="pb-4">
+                      <p className="text-gray-700 dark:text-gray-300 line-clamp-4 whitespace-pre-wrap leading-relaxed">
                         {note.content}
                       </p>
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        <Badge variant="secondary">Public</Badge>
+                      <div className="flex flex-wrap gap-2 mt-4">
+                        <Badge variant="secondary" className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">
+                          <GlobeIcon className="h-3 w-3 mr-1" />
+                          Public
+                        </Badge>
                       </div>
                     </CardContent>
-                    <CardFooter className="flex justify-end space-x-2">
+                    <CardFooter className="flex justify-end space-x-2 pt-0">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => window.open(`/public/${note.publicUrl}`, '_blank')}
+                        className="border-gray-200 dark:border-gray-600 hover:bg-green-50 dark:hover:bg-green-900/30 hover:border-green-200 dark:hover:border-green-700 hover:text-green-600 dark:hover:text-green-400 transition-colors"
                       >
                         <EyeIcon className="h-4 w-4 mr-1" />
                         View
@@ -557,6 +753,7 @@ export default function Index() {
                         variant="outline"
                         size="sm"
                         onClick={() => navigator.clipboard.writeText(`${window.location.origin}/public/${note.publicUrl}`)}
+                        className="border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-200 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                       >
                         <ExternalLinkIcon className="h-4 w-4 mr-1" />
                         Share
@@ -569,54 +766,66 @@ export default function Index() {
           </TabsContent>
         </Tabs>
 
-        {/* Edit Dialog */}
+        {/* Enhanced Edit Dialog */}
         <Dialog open={!!editingNote} onOpenChange={() => setEditingNote(null)}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl dark:bg-gray-800 dark:border-gray-700">
             <DialogHeader>
-              <DialogTitle>Edit Note</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-2xl font-semibold dark:text-white">Edit Note</DialogTitle>
+              <DialogDescription className="text-gray-600 dark:text-gray-300">
                 Update your note content and settings
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 mt-4">
+            <div className="space-y-6 mt-6">
               <div className="space-y-2">
-                <Label htmlFor="edit-title">Title</Label>
+                <Label htmlFor="edit-title" className="text-sm font-medium text-gray-700 dark:text-gray-200">Title</Label>
                 <Input
                   id="edit-title"
                   placeholder="Note title..."
                   value={noteTitle}
                   onChange={(e) => setNoteTitle(e.target.value)}
+                  className="h-12 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white transition-colors"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-content">Content</Label>
+                <Label htmlFor="edit-content" className="text-sm font-medium text-gray-700 dark:text-gray-200">Content</Label>
                 <Textarea
                   id="edit-content"
                   placeholder="Write your note content here..."
                   value={noteContent}
                   onChange={(e) => setNoteContent(e.target.value)}
-                  rows={6}
+                  rows={8}
+                  className="border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white transition-colors resize-none"
                 />
               </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+                <div className="flex items-center space-x-3">
                   <Switch
                     id="edit-public"
                     checked={isPublic}
                     onCheckedChange={setIsPublic}
                   />
-                  <Label htmlFor="edit-public">Public sharing</Label>
+                  <div>
+                    <Label htmlFor="edit-public" className="text-sm font-medium text-gray-700 dark:text-gray-200">Public sharing</Label>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Make this note visible to everyone</p>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3">
                   <Switch
                     id="edit-encrypted"
                     checked={isEncrypted}
                     onCheckedChange={setIsEncrypted}
                   />
-                  <Label htmlFor="edit-encrypted">Encrypt content</Label>
+                  <div>
+                    <Label htmlFor="edit-encrypted" className="text-sm font-medium text-gray-700 dark:text-gray-200">Encrypt content</Label>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Add extra security layer</p>
+                  </div>
                 </div>
               </div>
-              <Button onClick={handleUpdateNote} className="w-full">
+              <Button 
+                onClick={handleUpdateNote} 
+                className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-xl transition-all duration-200"
+              >
+                <SparklesIcon className="h-5 w-5 mr-2" />
                 Update Note
               </Button>
             </div>
